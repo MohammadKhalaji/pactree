@@ -214,7 +214,7 @@ pactreeImpl *initPT(int numa){
     std::string firstDlpath = firstRoot; 
     firstDlpath.append("/dl");
 
-    size_t sz = 1UL*1024UL*1024UL*1024UL; //10GB
+    size_t sz = 25UL*1024UL*1024UL*1024UL; //25GB
     int isCreated = 0;
     int isCreated2 = 0;
     root_obj* root = nullptr;
@@ -224,7 +224,7 @@ pactreeImpl *initPT(int numa){
     firstSlpath.append("/sl");
     const char *sl_path = firstSlpath.c_str();
 
-   size_t sl_size = 1UL*1024UL*1024UL*1024UL;
+   size_t sl_size = 25UL*1024UL*1024UL*1024UL; // 25GB
 
    PMem::bind(0,sl_path,sl_size,(void **)&sl_root,&isCreated);
     if (isCreated == 0) {

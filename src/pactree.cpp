@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <iostream>
+#include <string>
 #include <zconf.h>
 #include <cassert>
 #include "numa.h"
@@ -10,7 +11,9 @@
 #include "Combiner.h"
 #include "WorkerThread.h"
 #include <ordo_clock.h>
-
+#include <string.h>
+#include <cstdlib>
+#include <utility>
 
 #ifdef PACTREE_ENABLE_STATS
 #define acc_sl_time(x) (curThreadData->sltime+=x)
@@ -185,15 +188,42 @@ void pactreeImpl::createCombinerThread() {
     combinerThead = new std::thread(combinerThreadExec, totalNumaActive);
 }
 
+std::pair<std::string, std::string> getPMemPaths() { 
+    auto socket0 = getenv("PACTREE_SOCKET0_ROOT"); 
+    auto socket1 = getenv("PACTREE_SOCKET1_ROOT");
+
+    if (socket0 == NULL || socket1 == NULL) {
+        std::cout << "Please set PACTREE_SOCKET0_ROOT and PACTREE_SOCKET1_ROOT" << std::endl;
+        exit(1);
+    }
+
+
+    #ifdef PREFER_SOCKET0
+    return std::make_pair(socket0, socket1);
+    #else 
+    return std::make_pair(socket1, socket0);
+    #endif 
+}
+
 pactreeImpl *initPT(int numa){
-    const char* path = "/mnt/pmem0/dl";
+    auto paths = getPMemPaths();
+    auto firstRoot = paths.first;
+    auto secondRoot = paths.second;
+
+
+    std::string firstDlpath = firstRoot; 
+    firstDlpath.append("/dl");
+
     size_t sz = 1UL*1024UL*1024UL*1024UL; //10GB
     int isCreated = 0;
     int isCreated2 = 0;
     root_obj* root = nullptr;
     root_obj* sl_root = nullptr;
 
-   const char *sl_path = "/mnt/pmem0/sl";
+    std::string firstSlpath = firstRoot;
+    firstSlpath.append("/sl");
+    const char *sl_path = firstSlpath.c_str();
+
    size_t sl_size = 1UL*1024UL*1024UL*1024UL;
 
    PMem::bind(0,sl_path,sl_size,(void **)&sl_root,&isCreated);
@@ -201,15 +231,28 @@ pactreeImpl *initPT(int numa){
         printf("Reading Search layer from an existing pactree.\n");
 	
     }
-    const char* log_path = "/mnt/pmem0/log";
+    std::string firstLogpath = firstRoot;
+    firstLogpath.append("/log");
+    const char *log_path = firstLogpath.c_str();
+
     PMem::bindLog(0,log_path,sz);
 
-    PMem::bind(1,path,sz,(void **)&root,&isCreated2);
+    PMem::bind(1,firstDlpath.c_str(),sz,(void **)&root,&isCreated2);
 
 #ifdef MULTIPOOL
-   const char* path2 = "/mnt/pmem1/dl";
-   const char* sl_path2 = "/mnt/pmem1/sl";
-   const char* log_path2 = "/mnt/pmem1/log";
+
+    std::string secondDlpath = secondRoot;
+    secondDlpath.append("/dl");
+
+    std::string secondSlpath = secondRoot;
+    secondSlpath.append("/sl");
+
+    std::string secondLogpath = secondRoot;
+    secondLogpath.append("/log");
+
+   const char* path2 = secondDlpath.c_str();
+   const char* sl_path2 = secondSlpath.c_str();
+   const char* log_path2 = secondLogpath.c_str();
    root_obj* root2 = nullptr;
    root_obj* sl_root2 = nullptr;
    PMem::bind(3,sl_path2,sl_size,(void **)&sl_root2,&isCreated);

@@ -1,0 +1,12 @@
+{
+    // disable c/c++ intellisense: 
+    "C_Cpp.intelliSenseEngine": "disabled", 
+    // enable clangd intellisense:
+    "clangd.path": "clangd-12", 
+    "clangd.arguments": [
+        "--log=verbose",
+        "-pretty", 
+        "--compile-commands-dir=out",
+        "--background-index", 
+    ],
+}
